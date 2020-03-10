@@ -16,6 +16,12 @@ var (
 	issuesCommentsCreateFlags = IssuesCommentsCreateFlags(issuesCommentsCreate)
 )
 
+type Section struct {
+	Title     string
+	Content   []string
+	Collapsed bool
+}
+
 type Repo struct {
 	OwnerName *string
 	RepoName  *string
@@ -42,17 +48,15 @@ func IssueFlags(cmd *kingpin.CmdClause) Issue {
 
 type IssuesCommentsCreate struct {
 	Issue
-	Comment        *string
-	Markdown       *bool
-	MarkdownSyntax *string
+	Comment  *string
+	Markdown *bool
 }
 
 func IssuesCommentsCreateFlags(cmd *kingpin.CmdClause) IssuesCommentsCreate {
 	return IssuesCommentsCreate{
-		Issue:          IssueFlags(cmd),
-		Comment:        cmd.Flag("comment", "Comment to add, use file:// prefix to load a file").String(),
-		Markdown:       cmd.Flag("markdown", "Format the comment with markdown").Default("false").Bool(),
-		MarkdownSyntax: cmd.Flag("markdown-syntax", "Syntax highlighting to use in markdown").String(),
+		Issue:    IssueFlags(cmd),
+		Comment:  cmd.Flag("comment", "Comment to add, use file:// prefix to load a file").String(),
+		Markdown: cmd.Flag("markdown", "Format the comment with markdown").Default("false").Bool(),
 	}
 }
 
@@ -100,10 +104,42 @@ func HandleIssuesCommentsCreateCmd(client *github.Client, event interface{}) (in
 		comment = commentArg
 	}
 
-	if *issuesCommentsCreateFlags.Markdown || *issuesCommentsCreateFlags.MarkdownSyntax != "" {
-		comment = fmt.Sprintf("```%s\n%s\n```", *issuesCommentsCreateFlags.MarkdownSyntax, comment)
-	}
+	sections := []Section{Section{}}
 
+	if *issuesCommentsCreateFlags.Markdown {
+		lines := strings.Split(comment, "\n")
+
+		for _, line := range lines {
+			if strings.HasPrefix(line, "::") {
+				if len(sections[len(sections)-1].Content) != 0 {
+					sections = append(sections, Section{})
+				}
+				line = line[2:]
+
+				section := &sections[len(sections)-1]
+				if strings.HasPrefix(line, "-") {
+					section.Collapsed = true
+					line = line[1:]
+				}
+				section.Title = strings.TrimSpace(line)
+				continue
+			}
+
+			section := &sections[len(sections)-1]
+			section.Content = append(section.Content, line)
+		}
+		final := make([]string, len(sections))
+		for index, section := range sections {
+			content := strings.Join(section.Content, "\n")
+			if section.Collapsed {
+				content = fmt.Sprintf("<details><summary>%s</summary>\n\n```\n%s```\n</details>\n", section.Title, content)
+			} else {
+				content = fmt.Sprintf("%s\n\n```\n%s```\n", section.Title, content)
+			}
+			final[index] = content
+			comment = strings.Join(final, "\n")
+		}
+	}
 	return HandleIssuesCommentsCreate(
 		client,
 		owner,
