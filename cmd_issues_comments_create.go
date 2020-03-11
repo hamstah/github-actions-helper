@@ -22,30 +22,6 @@ type Section struct {
 	Collapsed bool
 }
 
-type Repo struct {
-	OwnerName *string
-	RepoName  *string
-}
-
-func RepoFlags(cmd *kingpin.CmdClause) Repo {
-	return Repo{
-		OwnerName: cmd.Flag("owner", "Owner name").String(),
-		RepoName:  cmd.Flag("repo", "Repo name").String(),
-	}
-}
-
-type Issue struct {
-	Repo
-	ID *int
-}
-
-func IssueFlags(cmd *kingpin.CmdClause) Issue {
-	return Issue{
-		Repo: RepoFlags(cmd),
-		ID:   cmd.Flag("id", "PR id").Int(),
-	}
-}
-
 type IssuesCommentsCreate struct {
 	Issue
 	Comment  *string
@@ -62,24 +38,13 @@ func IssuesCommentsCreateFlags(cmd *kingpin.CmdClause) IssuesCommentsCreate {
 
 func HandleIssuesCommentsCreateCmd(client *github.Client, event interface{}) (interface{}, error) {
 
-	var owner, repo string
-	var id int
+	issue, err := RepoFromEvent(event)
+	if err != nil {
+		return nil, err
+	}
 
-	switch event.(type) {
-	case *github.PullRequestEvent:
-		pr := event.(*github.PullRequestEvent)
-		fullName := *pr.GetPullRequest().GetBase().Repo.FullName
-		parts := strings.Split(fullName, "/")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid repo full_name %s", fullName)
-		}
-		owner = parts[0]
-		repo = parts[1]
-		id = *pr.Number
-	default:
-		owner = *issuesCommentsCreateFlags.OwnerName
-		repo = *issuesCommentsCreateFlags.RepoName
-		id = *issuesCommentsCreateFlags.ID
+	if issue == nil {
+		issue = &issuesCommentsCreateFlags.Issue
 	}
 
 	commentArg := *issuesCommentsCreateFlags.Comment
@@ -142,32 +107,26 @@ func HandleIssuesCommentsCreateCmd(client *github.Client, event interface{}) (in
 	}
 	return HandleIssuesCommentsCreate(
 		client,
-		owner,
-		repo,
-		id,
+		issue,
 		comment,
 	)
 }
 
-func HandleIssuesCommentsCreate(client *github.Client, owner, repo string, id int, comment string) (interface{}, error) {
-	if owner == "" {
+func HandleIssuesCommentsCreate(client *github.Client, issue *Issue, comment string) (interface{}, error) {
+	if *issue.OwnerName == "" {
 		return nil, fmt.Errorf("owner can't be empty")
 	}
 
-	if repo == "" {
+	if *issue.RepoName == "" {
 		return nil, fmt.Errorf("repo can't be empty")
 	}
 
-	if id == 0 {
+	if *issue.ID == 0 {
 		return nil, fmt.Errorf("id can't be empty")
 	}
 
 	input := &github.IssueComment{Body: github.String(comment)}
 
-	c, _, err := client.Issues.CreateComment(context.Background(), owner, repo, id, input)
-	if err != nil {
-		return nil, fmt.Errorf("Issues.CreateComment returned error: %v", err)
-	}
-
-	return c, nil
+	c, _, err := client.Issues.CreateComment(context.Background(), *issue.OwnerName, *issue.RepoName, *issue.ID, input)
+	return c, err
 }

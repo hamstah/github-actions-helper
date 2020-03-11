@@ -63,6 +63,8 @@ func main() {
 	switch kingpin.Parse() {
 	case issuesCommentsCreate.FullCommand():
 		result, err = HandleIssuesCommentsCreateCmd(client, event)
+	case pullsMerge.FullCommand():
+		result, err = HandlePullsMergeCmd(client, event)
 	}
 	FatalOnError(err)
 
