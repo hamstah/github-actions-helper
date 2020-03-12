@@ -70,6 +70,8 @@ func main() {
 		result, err = HandleIssuesCommentsCreateCmd(ctx, client, event)
 	case issuesCommentsFilter.FullCommand():
 		result, err = HandleIssuesCommentsFilterCmd(ctx, client, event)
+	case pullsGet.FullCommand():
+		result, err = HandlePullsGetCmd(ctx, client, event)
 	case pullsMerge.FullCommand():
 		result, err = HandlePullsMergeCmd(ctx, client, event)
 	}
