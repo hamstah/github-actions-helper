@@ -34,6 +34,8 @@ func ParseEvent() (interface{}, error) {
 		event = &github.PushEvent{}
 	case "pull_request":
 		event = &github.PullRequestEvent{}
+	case "issue_comment":
+		event = &github.IssueCommentEvent{}
 	default:
 		fmt.Println(eventName)
 		fmt.Println(string(bytes))
@@ -66,6 +68,8 @@ func main() {
 	switch kingpin.Parse() {
 	case issuesCommentsCreate.FullCommand():
 		result, err = HandleIssuesCommentsCreateCmd(ctx, client, event)
+	case issuesCommentsFilter.FullCommand():
+		result, err = HandleIssuesCommentsFilterCmd(ctx, client, event)
 	case pullsMerge.FullCommand():
 		result, err = HandlePullsMergeCmd(ctx, client, event)
 	}
