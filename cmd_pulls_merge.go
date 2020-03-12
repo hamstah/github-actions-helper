@@ -62,18 +62,21 @@ func HandlePullsMergeCmd(ctx context.Context, client *github.Client, event inter
 	}
 
 	if *pullsMergeFlags.DeleteBranch {
-		var ref string
+		var pr *github.PullRequest
 		switch event.(type) {
 		case *github.PullRequestEvent:
-			pr := *event.(*github.PullRequestEvent).GetPullRequest()
-			if *pr.GetBase().Repo.FullName != *pr.GetHead().Repo.FullName {
-				return c, nil
-			}
-			ref = *pr.GetHead().Ref
+			pr = event.(*github.PullRequestEvent).GetPullRequest()
 		default:
+			pr, _, err = client.PullRequests.Get(ctx, *issue.OwnerName, *issue.RepoName, *issue.ID)
+			if err != nil {
+				return c, err
+			}
+		}
+
+		if *pr.GetBase().Repo.FullName != *pr.GetHead().Repo.FullName {
 			return c, nil
 		}
-		_, err = client.Git.DeleteRef(ctx, *issue.OwnerName, *issue.RepoName, fmt.Sprintf("heads/%s", ref))
+		_, err = client.Git.DeleteRef(ctx, *issue.OwnerName, *issue.RepoName, fmt.Sprintf("heads/%s", *pr.GetHead().Ref))
 	}
 
 	return c, err
