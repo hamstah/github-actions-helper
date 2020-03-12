@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/google/go-github/v29/github"
 	"golang.org/x/net/context"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -17,6 +19,7 @@ type PullsMerge struct {
 	CommitTitle   *string
 	MergeMethod   *string
 	SHA           *string
+	DeleteBranch  *bool
 }
 
 func PullsMergeFlags(cmd *kingpin.CmdClause) PullsMerge {
@@ -54,6 +57,24 @@ func HandlePullsMergeCmd(ctx context.Context, client *github.Client, event inter
 		*pullsMergeFlags.CommitMessage,
 		options,
 	)
+	if err != nil {
+		return c, err
+	}
+
+	if *pullsMergeFlags.DeleteBranch {
+		var ref string
+		switch event.(type) {
+		case *github.PullRequestEvent:
+			pr := *event.(*github.PullRequestEvent).GetPullRequest()
+			if *pr.GetBase().Repo.FullName != *pr.GetHead().Repo.FullName {
+				return c, nil
+			}
+			ref = *pr.GetHead().Ref
+		default:
+			return c, nil
+		}
+		_, err = client.Git.DeleteRef(ctx, *issue.OwnerName, *issue.RepoName, fmt.Sprintf("heads/%s", ref))
+	}
 
 	return c, err
 }
