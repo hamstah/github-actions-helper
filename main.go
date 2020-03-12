@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -60,11 +61,13 @@ func main() {
 	event, err := ParseEvent()
 	FatalOnError(err)
 
+	ctx := context.Background()
+
 	switch kingpin.Parse() {
 	case issuesCommentsCreate.FullCommand():
-		result, err = HandleIssuesCommentsCreateCmd(client, event)
+		result, err = HandleIssuesCommentsCreateCmd(ctx, client, event)
 	case pullsMerge.FullCommand():
-		result, err = HandlePullsMergeCmd(client, event)
+		result, err = HandlePullsMergeCmd(ctx, client, event)
 	}
 	FatalOnError(err)
 

@@ -36,7 +36,7 @@ func IssuesCommentsCreateFlags(cmd *kingpin.CmdClause) IssuesCommentsCreate {
 	}
 }
 
-func HandleIssuesCommentsCreateCmd(client *github.Client, event interface{}) (interface{}, error) {
+func HandleIssuesCommentsCreateCmd(ctx context.Context, client *github.Client, event interface{}) (interface{}, error) {
 
 	issue, err := RepoFromEvent(event)
 	if err != nil {
@@ -106,13 +106,14 @@ func HandleIssuesCommentsCreateCmd(client *github.Client, event interface{}) (in
 		}
 	}
 	return HandleIssuesCommentsCreate(
+		ctx,
 		client,
 		issue,
 		comment,
 	)
 }
 
-func HandleIssuesCommentsCreate(client *github.Client, issue *Issue, comment string) (interface{}, error) {
+func HandleIssuesCommentsCreate(ctx context.Context, client *github.Client, issue *Issue, comment string) (interface{}, error) {
 	if *issue.OwnerName == "" {
 		return nil, fmt.Errorf("owner can't be empty")
 	}
@@ -127,6 +128,6 @@ func HandleIssuesCommentsCreate(client *github.Client, issue *Issue, comment str
 
 	input := &github.IssueComment{Body: github.String(comment)}
 
-	c, _, err := client.Issues.CreateComment(context.Background(), *issue.OwnerName, *issue.RepoName, *issue.ID, input)
+	c, _, err := client.Issues.CreateComment(ctx, *issue.OwnerName, *issue.RepoName, *issue.ID, input)
 	return c, err
 }

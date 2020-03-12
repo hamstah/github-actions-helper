@@ -26,10 +26,11 @@ func PullsMergeFlags(cmd *kingpin.CmdClause) PullsMerge {
 		CommitTitle:   cmd.Flag("commit-title", "Commit title").String(),
 		MergeMethod:   cmd.Flag("merge-method", "Merge method").Default("merge").Enum("merge", "rebase", "squash"),
 		SHA:           cmd.Flag("sha", "SHA of the commit to merge").String(),
+		DeleteBranch:  cmd.Flag("delete-branch", "Delete branch after merging").Default("false").Bool(),
 	}
 }
 
-func HandlePullsMergeCmd(client *github.Client, event interface{}) (interface{}, error) {
+func HandlePullsMergeCmd(ctx context.Context, client *github.Client, event interface{}) (interface{}, error) {
 	issue, err := RepoFromEvent(event)
 	if err != nil {
 		return nil, err
@@ -46,7 +47,7 @@ func HandlePullsMergeCmd(client *github.Client, event interface{}) (interface{},
 	}
 
 	c, _, err := client.PullRequests.Merge(
-		context.Background(),
+		ctx,
 		*issue.OwnerName,
 		*issue.RepoName,
 		*issue.ID,
