@@ -16,12 +16,6 @@ var (
 	issuesCommentsCreateFlags = IssuesCommentsCreateFlags(issuesCommentsCreate)
 )
 
-type Section struct {
-	Title     string
-	Content   []string
-	Collapsed bool
-}
-
 type IssuesCommentsCreate struct {
 	Issue
 	Comment  *string
@@ -69,41 +63,8 @@ func HandleIssuesCommentsCreateCmd(ctx context.Context, client *github.Client, e
 		comment = commentArg
 	}
 
-	sections := []Section{Section{}}
-
 	if *issuesCommentsCreateFlags.Markdown {
-		lines := strings.Split(comment, "\n")
-
-		for _, line := range lines {
-			if strings.HasPrefix(line, "::") {
-				if len(sections[len(sections)-1].Content) != 0 {
-					sections = append(sections, Section{})
-				}
-				line = line[2:]
-
-				section := &sections[len(sections)-1]
-				if strings.HasPrefix(line, "-") {
-					section.Collapsed = true
-					line = line[1:]
-				}
-				section.Title = strings.TrimSpace(line)
-				continue
-			}
-
-			section := &sections[len(sections)-1]
-			section.Content = append(section.Content, line)
-		}
-		final := make([]string, len(sections))
-		for index, section := range sections {
-			content := strings.Join(section.Content, "\n")
-			if section.Collapsed {
-				content = fmt.Sprintf("<details><summary>%s</summary>\n\n```\n%s```\n</details>\n", section.Title, content)
-			} else {
-				content = fmt.Sprintf("%s\n\n```\n%s```\n", section.Title, content)
-			}
-			final[index] = content
-			comment = strings.Join(final, "\n")
-		}
+		comment = FormatComment(comment)
 	}
 	return HandleIssuesCommentsCreate(
 		ctx,
