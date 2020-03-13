@@ -12,6 +12,10 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
+var (
+	quiet = kingpin.Flag("quiet", "Do not show any output").Default("false").Bool()
+)
+
 func ParseEvent() (interface{}, error) {
 	eventPath := os.Getenv("GITHUB_EVENT_PATH")
 	if eventPath == "" {
@@ -37,8 +41,10 @@ func ParseEvent() (interface{}, error) {
 	case "issue_comment":
 		event = &github.IssueCommentEvent{}
 	default:
-		fmt.Println(eventName)
-		fmt.Println(string(bytes))
+		if !*quiet {
+			fmt.Println(eventName)
+			fmt.Println(string(bytes))
+		}
 	}
 
 	if event == nil {
@@ -51,7 +57,11 @@ func ParseEvent() (interface{}, error) {
 
 func FatalOnError(err error) {
 	if err != nil {
-		log.Fatalln(err)
+		if !*quiet {
+			log.Fatalln(err)
+		} else {
+			os.Exit(1)
+		}
 	}
 }
 
@@ -77,7 +87,7 @@ func main() {
 	}
 	FatalOnError(err)
 
-	if result != nil {
+	if result != nil && !*quiet {
 		bytes, err := json.MarshalIndent(result, "", "  ")
 		FatalOnError(err)
 		fmt.Println(string(bytes))
