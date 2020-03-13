@@ -5,6 +5,15 @@ import (
 	"testing"
 )
 
+func TestFormat(t *testing.T) {
+	sections := []Section{
+		{Title: "Test1", Content: []string{"blah"}, Collapsed: false},
+		{Title: "Test2", Content: []string{"foo"}, Collapsed: true},
+	}
+	expected := "Test1\n\n```\nblah\n```\n\n<details><summary>Test2</summary>\n\n```\nfoo\n```\n</details>\n"
+	require.Equal(t, expected, FormatSections(sections))
+}
+
 func TestNoSection(t *testing.T) {
 	comment := "blah\nfoo\nbar\n"
 	expected := []Section{

@@ -41,13 +41,17 @@ func ParseComment(comment string) []Section {
 
 func FormatComment(comment string) string {
 	sections := ParseComment(comment)
+	return FormatSections(sections)
+}
+
+func FormatSections(sections []Section) string {
 	final := make([]string, len(sections))
 	for index, section := range sections {
 		content := strings.Join(section.Content, "\n")
 		if section.Collapsed {
-			content = fmt.Sprintf("<details><summary>%s</summary>\n\n```\n%s```\n</details>\n", section.Title, content)
+			content = fmt.Sprintf("<details><summary>%s</summary>\n\n```\n%s\n```\n</details>\n", section.Title, content)
 		} else {
-			content = fmt.Sprintf("%s\n\n```\n%s```\n", section.Title, content)
+			content = fmt.Sprintf("%s\n\n```\n%s\n```\n", section.Title, content)
 		}
 		final[index] = content
 	}
