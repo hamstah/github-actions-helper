@@ -20,6 +20,9 @@ Commands:
   pulls-get [<flags>]
     Get a PR
 
+  pulls-get-raw --format=FORMAT [<flags>]
+    Get a PR in raw format
+
   pulls-merge --commit-message=COMMIT-MESSAGE [<flags>]
     Merge a PR
 ```

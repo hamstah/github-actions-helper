@@ -82,14 +82,23 @@ func main() {
 		result, err = HandleIssuesCommentsFilterCmd(ctx, client, event)
 	case pullsGet.FullCommand():
 		result, err = HandlePullsGetCmd(ctx, client, event)
+	case pullsGetRaw.FullCommand():
+		result, err = HandlePullsGetRawCmd(ctx, client, event)
 	case pullsMerge.FullCommand():
 		result, err = HandlePullsMergeCmd(ctx, client, event)
+	default:
+		err = fmt.Errorf("unsupported command")
 	}
 	FatalOnError(err)
 
 	if result != nil && !*quiet {
-		bytes, err := json.MarshalIndent(result, "", "  ")
-		FatalOnError(err)
-		fmt.Println(string(bytes))
+		switch result.(type) {
+		case string:
+			fmt.Println(result.(string))
+		default:
+			bytes, err := json.MarshalIndent(result, "", "  ")
+			FatalOnError(err)
+			fmt.Println(string(bytes))
+		}
 	}
 }
